@@ -12,11 +12,23 @@ function connectToDb(invoker) {
         }
 } connectToDb("initial");
 
-var Status = {
-    noops: "noops",     //no operation made
-    fail: "fail",       //operation failed
-    timeout: "timeout", //connection timed out
-    success: "success"  //operation is successful
+var Errors = {
+    AUT_01: "Authorization code is empty.",
+    AUT_02: "Access Unauthorized.",
+    PAG_01: "The order is not matched 'field,(DESC|ASC)'.",
+    PAG_02: "The field of order is not allow sorting.",
+    USR_01: "Email or Password is invalid.",
+    USR_02: "The field(s) are/is required.",
+    USR_03: "The email is invalid",
+    USR_04: "The email already exists.",
+    USR_05: "The email doesn't exist.",
+    USR_06: "this is an invalid phone number.",
+    USR_07: "this is too long <FIELD NAME>.",
+    USR_08: "this is an invalid Credit Card.",
+    USR_09: "The Shipping Region ID is not number",
+    CAT_01: "Don't exist category with this ID.",
+    DEP_01: "The ID is not a number.",
+    DEP_02: "Don'exist department with this ID."
 };
 
 const DBCONNTIMEOUT = 60000; //in terms of milliseconds, routine will stop trying to connect to DB after this lapsed
@@ -32,15 +44,7 @@ require('seneca')({
 .add(
     { cmd: "getDepartments" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -51,26 +55,30 @@ require('seneca')({
             if (db.status == "connected") {
                 clearInterval(timerhandle);
 
-                var query = "";
+                var query = "SELECT * FROM department";
 
                 db.client.query(
                 query, 
-                [],
                 function(err, result, fields) {
                     if (err) {
                         console.error(err);
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getDepartments");
                         return;
                     }
                     
                     if (result && result.length > 0) {
-                        returnObj.status = Status.success;
-                    }
+                        returnObj = result;
+                    } else {
+						returnObj = {
+							code: "DEP_02",
+						    message: Errors.DEP_02,
+						    field: "department_id"
+						}
+					}
 
                     done(null, returnObj);
                 });
@@ -89,15 +97,7 @@ require('seneca')({
 .add(
     { cmd: "getCategories" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -110,6 +110,38 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
+                
+                if (message.hasOwnProperty('order')
+					&& message.hasOwnProperty('page')
+					&& message.hasOwnProperty('limit')) {
+					query = ""; //todo
+				} else if (message.hasOwnProperty('category_id') {
+					query = "SELECT * FROM category WHERE category_id = ?";
+					conditionvalues.push(message.category_id);
+					returnObj = {
+						code: "CAT_01",
+					    message = Errors.CAT_01,
+					    field = "category_id"
+					};
+				} else if (message.hasOwnProperty('product_id') {
+					query = "SELECT c.* FROM category c INNER JOIN product_category pc \
+							 ON c.category_id = pc.category_id \
+							 WHERE pc.product_id = ?";
+					conditionvalues.push(message.product_id);
+					returnObj = {
+						code: "CAT_01",
+					    message = Errors.CAT_01,
+					    field = "product_id"
+					};
+				} else if (message.hasOwnProperty('department_id') {
+					query = "SELECT * FROM category WHERE department_id = ?"
+					conditionvalues.push(message.department_id);
+					returnObj = {
+						code: "CAT_01",
+					    message = Errors.CAT_01,
+					    field = "department_id"
+					};
+				}
 
                 db.client.query(
                 query, 
@@ -120,14 +152,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getCategories");
                         return;
                     }
-                    
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+
+                    if (result && result.length > 0) {
+                        returnObj = result
                     }
 
                     done(null, returnObj);
@@ -147,15 +178,7 @@ require('seneca')({
 .add(
     { cmd: "getAttributes" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -168,6 +191,23 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
+                if (message.hasOwnProperty('attribute_id')) {
+					query = "SELECT * FROM attribute WHERE attribute_id = ?";
+					conditionvalues.push(message.attribute_id);
+				} else if (message.hasOwnProperty('attribute_id_v')) {
+					query = "SELECT * FROM attribute_value WHERE attribute_id = ?";
+					conditionvalues.push(message.attribute_id);
+				} else if (message.hasOwnProperty('product_id')) {
+					query = "SELECT a.name AS attribute_name, av.attribute_value_id, av.value AS attribute_value \
+					         FROM attribute a INNER JOIN attribute_value av \
+					         ON a.attribute_id = av.attribute_id \
+					         INNER JOIN product_attribute pa \
+					         ON av.attribute_value_id = pa.attribute_value_id \
+					         WHERE pa.product_id = ?";
+					conditionvalues.push(message.product_id);
+				} else {
+					query = "SELECT * FROM attribute";
+				}
 
                 db.client.query(
                 query, 
@@ -178,14 +218,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getAttributes");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
