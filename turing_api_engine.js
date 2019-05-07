@@ -194,9 +194,9 @@ require('seneca')({
                 if (message.hasOwnProperty('attribute_id')) {
 					query = "SELECT * FROM attribute WHERE attribute_id = ?";
 					conditionvalues.push(message.attribute_id);
-				} else if (message.hasOwnProperty('attribute_id_v')) {
+				} else if (message.hasOwnProperty('attribute_id_val')) {
 					query = "SELECT * FROM attribute_value WHERE attribute_id = ?";
-					conditionvalues.push(message.attribute_id);
+					conditionvalues.push(message.attribute_id_val);
 				} else if (message.hasOwnProperty('product_id')) {
 					query = "SELECT a.name AS attribute_name, av.attribute_value_id, av.value AS attribute_value \
 					         FROM attribute a INNER JOIN attribute_value av \
@@ -257,7 +257,48 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
-
+                if (message.hasOwnProperty('page')
+					&& message.hasOwnProperty('limit')
+					&& message.hasOwnProperty('description_length')) {
+					//todo
+				} else if (message.hasOwnProperty('query_string')
+					&& message.hasOwnProperty('all_words')
+					&& message.hasOwnProperty('page')
+					&& message.hasOwnProperty('limit')
+					&& message.hasOwnProperty('description_length')) {
+					//todo
+				} else if (message.hasOwnProperty('product_id')) {
+					query = "SELECT * FROM product WHERE product_id = ?";
+					conditionvalues.push(message.product_id);
+				} else if (message.hasOwnProperty('category_id')
+					&& message.hasOwnProperty('page')
+					&& message.hasOwnProperty('limit')
+					&& message.hasOwnProperty('description_length')) {
+					//todo
+				} else if (message.hasOwnProperty('department_id')
+					&& message.hasOwnProperty('page')
+					&& message.hasOwnProperty('limit')
+					&& message.hasOwnProperty('description_length')) {
+					//todo
+				} else if (message.hasOwnProperty('product_id_dtl')) {
+					query = "SELECT product_id, name, description, price, discounted_price \
+					         image, image_2 FROM product WHERE product_id = ?"
+					conditionvalues.push(message.product_id_dtl);
+				} else if (message.hasOwnProperty('product_id_loc')) {
+					query = "SELECT c.category_id, c.name AS category_name, d.department_id, d.name AS department_name \
+					         FROM category c INNER JOIN department d \
+					         ON c.department_id = d.department_id \
+					         INNER JOIN product_category pc \
+					         ON c.category_id = pc.category_id \
+					         WHERE pc.product_id = ?";
+					conditionvalues.push(message.product_id_loc);		          
+				} else if (message.hasOwnProperty('product_id_rev')) {
+					query = "SELECT c.name, r.review, r.rating, r.created_on \
+					         FROM customer c INNER JOIN review r \
+					         ON c.customer_id = r.customer_id \
+					         WHERE r.product_id = ?";
+					condtionvalues.push(message.product_id_rev);
+				}
                 db.client.query(
                 query, 
                 conditionvalues,
