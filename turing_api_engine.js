@@ -244,15 +244,7 @@ require('seneca')({
 .add(
     { cmd: "getProductInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -275,14 +267,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getProductInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
@@ -302,15 +293,7 @@ require('seneca')({
 .add(
     { cmd: "getCustomerInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -333,14 +316,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getCustomerInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
@@ -360,15 +342,7 @@ require('seneca')({
 .add(
     { cmd: "getOrderInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -391,14 +365,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getOrderInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
@@ -418,15 +391,7 @@ require('seneca')({
 .add(
     { cmd: "getShoppingCartInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -449,14 +414,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getShoppingCartInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
@@ -476,15 +440,7 @@ require('seneca')({
 .add(
     { cmd: "getTaxInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -507,14 +463,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getTaxInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
@@ -533,15 +488,7 @@ require('seneca')({
 .add(
     { cmd: "getShippingInfo" },
     function(message, done) {
-        var returnObj = { status: Status.noops };
-
-        if (!message.hasOwnProperty('')
-            ) {
-                console.error("Invalid parameter");
-                returnObj.status = Status.fail;
-                done (null, returnObj);
-                return;
-        }
+        var returnObj = {};
 
         //The routine loop, Executes the service only when 
         //we are connected to the database
@@ -564,14 +511,13 @@ require('seneca')({
                         db.client.end();
                         db.client = null;
                         db.status = "disconnected";
-                        returnObj.status = Status.fail;
-                        done(null, returnObj);
+                        done(null, null);
                         connectToDb("getShippingInfo");
                         return;
                     }
                     
-                    if (result && result.length > 1) {
-                        returnObj.status = Status.success;
+                    if (result && result.length > 0) {
+                        returnObj = result;
                     }
 
                     done(null, returnObj);
