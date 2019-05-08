@@ -1,12 +1,16 @@
 var express = require('express');
 var app = express();
+var api_engine = require('turing_api_engine.js');
 
 /**
  * departments route points
  */
-///categories Get Categories
+///departments Get Departments
 app.get('/departments', function (req, res) {
-   res.send('success');
+    api_engine.act({cmd:'department', name:'Get Departments'}, function(err, response) {
+		console.log(response);
+		res.send(response);
+	});
 });
 ///departments/{department_id} Get Department by ID
 app.get('/departments/([0-9]+)', function (req, res) {

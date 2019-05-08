@@ -1,6 +1,5 @@
 var db = require ("./db.js");
 var querystring = require('querystring');
-var http = require('http');
 
 function connectToDb(invoker) {
     if (db === undefined 
@@ -34,7 +33,7 @@ var Errors = {
 const DBCONNTIMEOUT = 60000; //in terms of milliseconds, routine will stop trying to connect to DB after this lapsed
 const DBQUERYINTERVAL = 1000; // also in terms of milliseconds, how frequent will it check the DB connection status
 
-require('seneca')({
+modules.exports = require('seneca')({
     timeout: 60000 // 60 seconds
 }) //Uses Seneca framework to start our microservice
 
@@ -713,5 +712,3 @@ require('seneca')({
         }, DBQUERYINTERVAL);
     }
 )
-
-console.log ("RegisterMyVote Mid-tier Subsystem")
