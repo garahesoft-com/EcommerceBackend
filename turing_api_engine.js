@@ -42,7 +42,7 @@ require('seneca')({
  * Microservices for departments
  */ 
 .add(
-    { cmd: "getDepartments" },
+    { cmd: "department" },
     function(message, done) {
         var returnObj = {};
 
@@ -55,10 +55,23 @@ require('seneca')({
             if (db.status == "connected") {
                 clearInterval(timerhandle);
 
-                var query = "SELECT * FROM department";
-
+                var query = "";
+				var conditionvalues = [];
+				returnObj = {
+					code: "DEP_02",
+					message: Errors.DEP_02,
+					field: "department_id"
+				};
+				if (message.hasOwnProperty('department_id')) {
+					query = "SELECT * FROM department WHERE department_id = ?";
+					conditionvalues.push(message.department_id);
+				} else {
+					query = "SELECT * FROM department";
+				}
+				
                 db.client.query(
-                query, 
+                query,
+                conditionvalues,
                 function(err, result, fields) {
                     if (err) {
                         console.error(err);
@@ -66,25 +79,18 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getDepartments");
+                        connectToDb("department");
                         return;
                     }
                     
                     if (result && result.length > 0) {
                         returnObj = result;
-                    } else {
-						returnObj = {
-							code: "DEP_02",
-						    message: Errors.DEP_02,
-						    field: "department_id"
-						}
-					}
-
+                    }
+ 
                     done(null, returnObj);
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -95,7 +101,7 @@ require('seneca')({
  * Microservices for categories
  */ 
 .add(
-    { cmd: "getCategories" },
+    { cmd: "category" },
     function(message, done) {
         var returnObj = {};
 
@@ -114,7 +120,9 @@ require('seneca')({
                 if (message.hasOwnProperty('order')
 					&& message.hasOwnProperty('page')
 					&& message.hasOwnProperty('limit')) {
-					query = ""; //todo
+					var offset = (message.page - 1) * message.limit;
+					query = "SELECT * FROM category ORDER BY ? LIMIT ?, ?";
+					conditionvalues = [message.order, offset, message.limit];
 				} else if (message.hasOwnProperty('category_id') {
 					query = "SELECT * FROM category WHERE category_id = ?";
 					conditionvalues.push(message.category_id);
@@ -153,7 +161,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getCategories");
+                        connectToDb("category");
                         return;
                     }
 
@@ -165,7 +173,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -176,7 +183,7 @@ require('seneca')({
  * Microservices for attributes
  */ 
 .add(
-    { cmd: "getAttributes" },
+    { cmd: "attribute" },
     function(message, done) {
         var returnObj = {};
 
@@ -191,6 +198,7 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
+                
                 if (message.hasOwnProperty('attribute_id')) {
 					query = "SELECT * FROM attribute WHERE attribute_id = ?";
 					conditionvalues.push(message.attribute_id);
@@ -219,7 +227,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getAttributes");
+                        connectToDb("attribute");
                         return;
                     }
                     
@@ -231,7 +239,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -242,7 +249,7 @@ require('seneca')({
  * Microservices for products
  */ 
 .add(
-    { cmd: "getProductInfo" },
+    { cmd: "product" },
     function(message, done) {
         var returnObj = {};
 
@@ -257,16 +264,29 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
+                
                 if (message.hasOwnProperty('page')
 					&& message.hasOwnProperty('limit')
 					&& message.hasOwnProperty('description_length')) {
-					//todo
+					var offset = (message.page - 1) * message.limit;
+					query = "SELECT product_id, name, LEFT(description, ?), price, discounted_price, thumbnail \
+							 FROM product LIMIT ?, ?";
+					conditionvalues = [message.description_length, offset, message.limit];
 				} else if (message.hasOwnProperty('query_string')
 					&& message.hasOwnProperty('all_words')
 					&& message.hasOwnProperty('page')
 					&& message.hasOwnProperty('limit')
 					&& message.hasOwnProperty('description_length')) {
-					//todo
+					var offset = (message.page - 1) * message.limit;
+					var searchpattern = "";
+					if (message.all_words === "on")
+						searchpattern = "name = ?";
+					else
+						searchpattern = "name LIKE %?%";
+						
+					query = "SELECT product_id, name, LEFT(description, ?), price, discounted_price, thumbnail \
+							 FROM product WHERE " + searchpattern + " LIMIT ?, ?";
+					conditionvalues = [message.description_length, message.query_string, offset, message.limit];
 				} else if (message.hasOwnProperty('product_id')) {
 					query = "SELECT * FROM product WHERE product_id = ?";
 					conditionvalues.push(message.product_id);
@@ -274,12 +294,26 @@ require('seneca')({
 					&& message.hasOwnProperty('page')
 					&& message.hasOwnProperty('limit')
 					&& message.hasOwnProperty('description_length')) {
-					//todo
+					var offset = (message.page - 1) * message.limit;
+					query = "SELECT p.product_id, p.name, LEFT(p.description, ?), p.price, p.discounted_price, p.thumbnail \
+							 FROM product p INNER JOIN product_category pc \
+							 ON p.product_id = pc.product_id \
+							 WHERE pc.category_id = ? LIMIT ?, ?";
+					conditionvalues = [message.description_length, message.category_id, offset, message.limit];
 				} else if (message.hasOwnProperty('department_id')
 					&& message.hasOwnProperty('page')
 					&& message.hasOwnProperty('limit')
 					&& message.hasOwnProperty('description_length')) {
-					//todo
+					var offset = (message.page - 1) * message.limit;
+					query = "SELECT p.product_id, p.name, LEFT(p.description, ?), p.price, p.discounted_price, p.thumbnail, p.display \
+							 FROM product p INNER JOIN product_category pc \
+							 ON p.product_id = pc.product_id \
+							 INNER JOIN category c \
+							 ON pc.category_id = c.category_id \
+							 INNER JOIN department d \
+							 ON c.department_id = d.department_id \
+							 WHERE d.department_id = ? LIMIT ?, ?";
+					conditionvalues = [message.description_length, message.department_id, offset, message.limit];
 				} else if (message.hasOwnProperty('product_id_dtl')) {
 					query = "SELECT product_id, name, description, price, discounted_price \
 					         image, image_2 FROM product WHERE product_id = ?"
@@ -309,7 +343,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getProductInfo");
+                        connectToDb("product");
                         return;
                     }
                     
@@ -321,7 +355,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -332,7 +365,7 @@ require('seneca')({
  * Microservices for customers
  */ 
 .add(
-    { cmd: "getCustomerInfo" },
+    { cmd: "customer" },
     function(message, done) {
         var returnObj = {};
 
@@ -358,7 +391,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getCustomerInfo");
+                        connectToDb("customer");
                         return;
                     }
                     
@@ -370,7 +403,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -381,7 +413,7 @@ require('seneca')({
  * Microservices for orders
  */ 
 .add(
-    { cmd: "getOrderInfo" },
+    { cmd: "order" },
     function(message, done) {
         var returnObj = {};
 
@@ -407,7 +439,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getOrderInfo");
+                        connectToDb("order");
                         return;
                     }
                     
@@ -419,7 +451,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -430,7 +461,7 @@ require('seneca')({
  * Microservices for shoppingcart
  */ 
 .add(
-    { cmd: "getShoppingCartInfo" },
+    { cmd: "shoppingcart" },
     function(message, done) {
         var returnObj = {};
 
@@ -440,12 +471,67 @@ require('seneca')({
         var timerhandle = setInterval(function() {
             ++loopcounter;
 
+			var generateId = function() {
+                var result = "";
+                var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
+    
+                for (var i = 0; i < 20; i++)
+                    result += possible.charAt(Math.floor(Math.random() * possible.length));
+    
+                return result;
+            }
+            
             if (db.status == "connected") {
                 clearInterval(timerhandle);
 
                 var query = "";
                 var conditionvalues = [];
-
+                if (message.hasOwnProperty('cart_id')
+					&& message.hasOwnProperty('product_id')
+					&& message.hasOwnProperty('attributes')) {
+					query = "INSERT INTO shopping_cart SET cart_id = ?, product_id = ?, attributes = ?";
+					conditionvalues = [message.cart_id, message.product_id, message.attributes];
+				} else if (message.hasOwnProperty('cart_id')) {
+					query = "SELECT sc.item_id, p.name, sc.attributes, sc.product_id, \
+					         p.price, sc.quantity, p.image, (p.price * sc.quantity) AS subtotal \
+					         FROM shopping_cart sc INNER JOIN product p \
+					         ON sc.product_id = p.product_id \
+					         WHERE sc.cart_id = ?";
+					conditionvalues.push(message.cart_id);
+				} else if (message.hasOwnProperty('item_id')
+					&& message.hasOwnProperty('quantity')) {
+					query = "UPDATE shopping_cart SET quantity = ? WHERE item_id = ?";
+					conditionvalues = [message.quantity, message.item_id];
+				} else if (message.hasOwnProperty('cart_id_del') {
+					query = "DELETE FROM shopping_cart WHERE cart_id = ?";
+					conditionvalues.push(message.cart_id_del);
+				} else if (message.hasOwnProperty('item_id_mov')) {
+					//todo
+				} else if (message.hasOwnProperty('cart_id_tamt')) {
+					query = "SELECT SUM(p.price * sc.quantity) AS total_amount \
+					         FROM shopping_cart sc INNER JOIN product p \
+					         ON sc.product_id = p.product_id \
+					         WHERE sc.cart_id = ?";
+					 conditionvalues.push(message.cart_id_tamt);
+				} else if (message.hasOwnProperty('item_id_sav')) {
+					//todo
+				} else if (message.hasOwnProperty('cart_id_svd')) {
+					query = "SELECT sc.item_id, p.name, sc.attributes, p.price \
+					         FROM shopping_cart sc INNER JOIN product p \
+					         ON sc.product_id = p.product_id \
+					         WHERE sc.cart_id = ?";
+					conditionvalues.push(message.cart_id_svd);
+				} else if (message.hasOwnProperty('item_id_rem')) {
+					query = "DELETE FROM shopping_cart WHERE item_id = ?";
+					conditionvalues.push(message.item_id_rem);
+				} else {
+					returnObj = {
+						cart_id: generateId();
+					}
+					done(null, returnObj);
+					return;
+				}
+				
                 db.client.query(
                 query, 
                 conditionvalues,
@@ -456,7 +542,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getShoppingCartInfo");
+                        connectToDb("shoppingcart");
                         return;
                     }
                     
@@ -468,7 +554,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -479,7 +564,7 @@ require('seneca')({
  * Microservices for tax
  */ 
 .add(
-    { cmd: "getTaxInfo" },
+    { cmd: "tax" },
     function(message, done) {
         var returnObj = {};
 
@@ -494,7 +579,13 @@ require('seneca')({
 
                 var query = "";
                 var conditionvalues = [];
-
+				if (message.hasOwnProperty('tax_id')) {
+					query = "SELECT * FROM tax WHERE tax_id = ?";
+					conditionvalues.push(message.tax_id);
+				} else {
+					query = "SELECT * FROM tax";
+				}
+				
                 db.client.query(
                 query, 
                 conditionvalues,
@@ -505,7 +596,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getTaxInfo");
+                        connectToDb("tax");
                         return;
                     }
                     
@@ -517,7 +608,6 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
@@ -527,7 +617,60 @@ require('seneca')({
  * Microservices for shipping
  */ 
 .add(
-    { cmd: "getShippingInfo" },
+    { cmd: "shipping" },
+    function(message, done) {
+        var returnObj = {};
+
+        //The routine loop, Executes the service only when 
+        //we are connected to the database
+        var loopcounter = 0;
+        var timerhandle = setInterval(function() {
+            ++loopcounter;
+
+            if (db.status == "connected") {
+                clearInterval(timerhandle);
+
+                var query = "";
+                var conditionvalues = [];
+				if (message.hasOwnProperty('shipping_region_id')) {
+					query = "SELECT * FROM shipping WHERE shipping_region_id = ?";
+					conditionvalues.push(message.shipping_region_id);
+				} else {
+					query = "SELECT * FROM shipping_region";
+				}
+                db.client.query(
+                query, 
+                conditionvalues,
+                function(err, result, fields) {
+                    if (err) {
+                        console.error(err);
+                        db.client.end();
+                        db.client = null;
+                        db.status = "disconnected";
+                        done(null, null);
+                        connectToDb("shipping");
+                        return;
+                    }
+                    
+                    if (result && result.length > 0) {
+                        returnObj = result;
+                    }
+
+                    done(null, returnObj);
+                });
+            } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
+                clearInterval(timerhandle);
+                done(null, returnObj);
+            }
+        }, DBQUERYINTERVAL);
+    }
+)
+
+/**
+ * Microservices for stripe
+ */ 
+.add(
+    { cmd: "stripe" },
     function(message, done) {
         var returnObj = {};
 
@@ -553,7 +696,7 @@ require('seneca')({
                         db.client = null;
                         db.status = "disconnected";
                         done(null, null);
-                        connectToDb("getShippingInfo");
+                        connectToDb("stripe");
                         return;
                     }
                     
@@ -565,16 +708,10 @@ require('seneca')({
                 });
             } else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
                 clearInterval(timerhandle);
-                returnObj.status = Status.timeout;
                 done(null, returnObj);
             }
         }, DBQUERYINTERVAL);
     }
 )
-
-/**
- * Microservices for stripe
- */ 
-.listen()
 
 console.log ("RegisterMyVote Mid-tier Subsystem")
