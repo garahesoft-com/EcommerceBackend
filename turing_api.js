@@ -1,224 +1,841 @@
 var express = require('express');
 var app = express();
-var api_engine = require('turing_api_engine.js');
+var db = require ("./db.js");
+var querystring = require('querystring');
+var bodyParser = require('body-parser');
+
+function connectToDb(invoker) {
+    if (db === undefined 
+        || !db.hasOwnProperty('client')
+        || db.client === null
+        || db.status === "disconnected") {
+            db.connect();
+            console.log("DB connection invoked by: " + invoker);
+        }
+} connectToDb("initial");
+
+var Errors = {
+    AUT_01: "Authorization code is empty.",
+    AUT_02: "Access Unauthorized.",
+    PAG_01: "The order is not matched 'field,(DESC|ASC)'.",
+    PAG_02: "The field of order is not allow sorting.",
+    USR_01: "Email or Password is invalid.",
+    USR_02: "The field(s) are/is required.",
+    USR_03: "The email is invalid",
+    USR_04: "The email already exists.",
+    USR_05: "The email doesn't exist.",
+    USR_06: "this is an invalid phone number.",
+    USR_07: "this is too long <FIELD NAME>.",
+    USR_08: "this is an invalid Credit Card.",
+    USR_09: "The Shipping Region ID is not number",
+    CAT_01: "Don't exist category with this ID.",
+    DEP_01: "The ID is not a number.",
+    DEP_02: "Don'exist department with this ID."
+};
+
+const DBCONNTIMEOUT = 60000; //in terms of milliseconds, routine will stop trying to connect to DB after this lapsed
+const DBQUERYINTERVAL = 1000; // also in terms of milliseconds, how frequent will it check the DB connection status
+
+const DBQUERYERR = "Database query error";
+const DBCONNTIMEOUTERR = "Database connection timeout";
+
+//middleware to filter unauthorized access
+/*app.use(function(req, res, next) {
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'No credentials sent!' });
+  }
+  next();
+});*/
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+
+function executeQuery(sql, conditions, returnObj, res) {
+	//The routine loop, Executes the service only when 
+	//we are connected to the database
+	var loopcounter = 0;
+	var timerhandle = setInterval(function() {
+		++loopcounter;
+
+		if (db.status == "connected") {
+			clearInterval(timerhandle);
+			
+			db.client.query(
+			sql,
+			conditions,
+			function(err, result, fields) {
+				if (err) {
+					console.error(err);
+					db.client.end();
+					db.client = null;
+					db.status = "disconnected";
+					res.send(DBQUERYERR);
+					connectToDb("executeQuery");
+					return;
+				}
+				
+				if (result && result.length > 0) {
+					returnObj = result;
+				}
+
+				res.send(returnObj);
+			});
+		} else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
+			clearInterval(timerhandle);
+			res.send(DBCONNTIMEOUTERR);
+		}
+	}, DBQUERYINTERVAL);
+}
 
 /**
- * departments route points
+ * departments api
  */
 ///departments Get Departments
 app.get('/departments', function (req, res) {
-    api_engine.act({cmd:'department', name:'Get Departments'}, function(err, response) {
-		console.log(response);
-		res.send(response);
-	});
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_departments()";
+     
+	executeQuery(query, [], returnObj, res);
 });
+
 ///departments/{department_id} Get Department by ID
-app.get('/departments/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/departments/:department_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM department WHERE department_id = ?";
+	conditionvalues = [
+		req.params.department_id
+	];
+     
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 
 /**
- * categories route points
+ * categories api
  */
 ///categories Get Categories
 app.get('/categories', function (req, res) {
-   res.send('success');
+    var returnObj = {};
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var offset = (req.query.page - 1) * req.query.limit;
+	var query = "SELECT category_id, name, description, department_id \
+				 FROM category ORDER BY ? LIMIT ?, ?";
+	var conditionvalues = [
+		req.query.order, 
+		offset, 
+		req.query.limit
+	];
+     
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 ///categories/{category_id} Get Category by ID
-app.get('/categories/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/categories/:category_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM category WHERE category_id = ?";
+	var conditionvalues = [
+		req.params.category_id
+	];
+     
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 ///categories/inProduct/{product_id} Get Categories of a Product
-app.get('/categories/inProduct/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/categories/inProduct/:product_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_categories_for_product(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+     
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///categories/inDepartment/{department_id} Get Categories of a Department
-app.get('/categories/inDepartment/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/categories/inDepartment/:department_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_department_categories(?)";
+	var conditionvalues = [
+		req.params.department_id
+	]
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * attributes route points
+ * attributes api
  */
 ///attributes Get Attribute list
 app.get('/attributes', function (req, res) {
-   res.send('success');
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_attributes()";
+
+	executeQuery(query, [], returnObj, res);
 });
 ///attributes/{attribute_id} Get Attribute list
-app.get('/attributes/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/attributes/:attribute_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_attribute_details(?)";
+	var conditionvalues = [
+		req.params.attribute_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///attributes/values/{attribute_id} Get Values Attribute from Atribute
-app.get('/attributes/values/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/attributes/values/:attribute_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_attribute_values(?)";
+	var conditionvalues = [
+		req.params.attribute_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///attributes/inProduct/{product_id} Get all Attributes with Produt ID
-app.get('/attributes/inProduct/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/attributes/inProduct/:product_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_product_attributes(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * products route points
+ * products api
  */
 ///products Get All Products
 app.get('/products', function (req, res) {
-   res.send('success');
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_products_on_catalog(?)";
+	var conditionvalues = [
+		req.query.description_length,
+		req.query.limit,
+		(req.query.page - 1) * req.query.limit
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/search Search products
 app.get('/products/search', function (req, res) {
-   res.send('success');
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var offset = (req.query.page - 1) * req.query.limit;
+	var searchpattern = "";
+	if (req.query.all_words === "on")
+		searchpattern = "name = ?";
+	else
+		searchpattern = "name LIKE %?%";
+		
+	var query = "SELECT product_id, name, LEFT(description, ?), price, discounted_price, thumbnail \
+				FROM product WHERE " + searchpattern + " LIMIT ?, ?";
+	var conditionvalues = [
+		req.query.description_length, 
+		req.query.query_string, 
+		offset, 
+		req.query.limit
+	];
+
+	executeQuery(query, conditionvalues, returnObj, res);
 });
-///products/search Search products
-app.get('/products/([0-9]+)', function (req, res) {
-   res.send('success');
+///products/{product_id} Product by ID
+app.get('/products/:product_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_product_info(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/inCategory/{category_id} Get a lit of Products of Categories
-app.get('/products/inCategory/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/products/inCategory/:category_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_products_in_category(?)";
+	var conditionvalues = [
+		req.params.category_id,
+		req.query.description_length,
+		req.query.limit,
+		(req.query.page - 1) * req.query.limit
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/inDepartment/{department_id} Get a list of Products on Department
-app.get('/products/inDepartment/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/products/inDepartment/:department_id([0-9]+)', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_products_on_department(?)";
+	var conditionvalues = [
+		req.params.department_id,
+		req.query.description_length,
+		req.query.limit,
+		(req.query.page - 1) * req.query.limit
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/{product_id}/details Get details of a Product
-app.get('/products/([0-9]+)/details', function (req, res) {
-   res.send('success');
+app.get('/products/:product_id([0-9]+)/details', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_product_details(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/{product_id}/locations Get locations of a Product
-app.get('/products/([0-9]+)/locations', function (req, res) {
-   res.send('success');
+app.get('/products/:product_id([0-9]+)/locations', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_product_locations(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/{product_id}/reviews Get reviews of a Product
-app.get('/products/([0-9]+)/reviews', function (req, res) {
-   res.send('success');
+app.get('/products/:product_id([0-9]+)/reviews', function (req, res) {
+	var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_get_product_reviews(?)";
+	var conditionvalues = [
+		req.params.product_id
+	];
+
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///products/{product_id}/reviews
-app.post('/products/([0-9]+)/reviews', function (req, res) {
-   res.send('success');
+app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL catalog_create_product_review(?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.params.product_id, 
+		req.body.review, 
+		req.body.rating
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * customers route points
+ * customers api
  */
 ///customer Update a customer
 app.put('/customer', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL customer_update_account(?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.body.name, 
+		req.body.email, 
+		req.body.password,
+		req.body.day_phone,
+		req.body.eve_phone,
+		req.body.mob_phone
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customer Get a customer by ID. The customer is getting by Token.
 app.get('/customer', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL customer_get_customer(?)";
+    var conditionvalues = [
+		req.header.USER-KEY
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customers Register a Customer
 app.post('/customers', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL customer_add(?)";
+    var conditionvalues = [ 
+		req.body.name, 
+		req.body.email, 
+		req.body.password
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customers/login Sign in in the Shopping.
 app.post('/customers/login', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL (?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.params.product_id, 
+		req.body.review, 
+		req.body.rating
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customers/facebook Sign in with a facebook login token.
 app.post('/customers/facebook', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL (?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.params.product_id, 
+		req.body.review, 
+		req.body.rating
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customers/address Update the address from customer
 app.put('/customers/address', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL customer_update_address(?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.body.address_1, 
+		req.body.address_2, 
+		req.body.city,
+		req.body.region,
+		req.body.postal_code,
+		req.body.country,
+		req.body.shipping_region_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///customers/creditCard Update the address from customer
 app.put('/customers/creditCard', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL customer_update_credit_card(?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.body.credit_card
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * orders route points
+ * orders api
  */
 ///orders Create a Order
 app.post('/orders', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL (?)";
+    var conditionvalues = [
+		req.header.USER-KEY, 
+		req.body.credit_card
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///orders/{order_id} Get Info about Order
-app.get('/orders/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/orders/:order_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL orders_get_order_details(?)";
+    var conditionvalues = [
+		req.params.order_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
-///orders/{order_id} Get Info about Order
+///orders/inCustomer Get orders by Customer
 app.get('/orders/inCustomer', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL orders_get_by_customer_id(?)";
+    var conditionvalues = [
+		req.header.USER-KEY
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
-///orders/{order_id} Get Info about Order
-app.get('/orders/shortDetail/([0-9]+)', function (req, res) {
-   res.send('success');
+///orders/shortDetail/{order_id} Get Info about Order
+app.get('/orders/shortDetail/:order_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL orders_get_order_short_details(?)";
+    var conditionvalues = [
+		req.params.order_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * shoppingcart route points
+ * shoppingcart api
  */
 ///shoppingcart/generateUniqueId Generete the unique CART ID
 app.get('/shoppingcart/generateUniqueId', function (req, res) {
-   res.send('success');
+    var returnObj = {};
+
+    var generateId = function() {
+        var result = "";
+        var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+        for (var i = 0; i < 20; i++)
+            result += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return result;
+    }
+    
+    returnObj = {
+        cart_id: generateId()
+    }
+
+    res.send(returnObj);
 });
 ///shoppingcart/add Add a Product in the cart
 app.post('/shoppingcart/add', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_add_product(?)";
+    var conditionvalues = [
+		req.body.cart_id,
+		req.body.product_id,
+		req.body.attributes
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///shoppingcart/{cart_id} Get List of Products in Shopping Cart
-app.get('/shoppingcart/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/shoppingcart/:cart_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT sc.item_id, p.name, sc.attributes, sc.product_id, \
+				COALESCE(NULLIF(p.discounted_price, 0), p.price) AS price, sc.quantity, p.image, \
+				COALESCE(NULLIF(p.discounted_price, 0), p.price) * sc.quantity AS subtotal \
+				FROM shopping_cart sc INNER JOIN product p \
+				ON sc.product_id = p.product_id \
+				WHERE sc.cart_id = ? AND sc.buy_now";
+	var conditionvalues = [
+		req.params.cart_id
+	];
+	
+	executeQuery(query, conditionvalues, returnObj, res);
 });
-///shoppingcart/{cart_id} Get List of Products in Shopping Cart
-app.put('/shoppingcart/update/([0-9]+)', function (req, res) {
-   res.send('success');
+///shoppingcart/update/{item_id} Update the cart by item
+app.put('/shoppingcart/update/:item_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_update(?)";
+    var conditionvalues = [
+		req.params.item_id,
+		req.body.quantity
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///shoppingcart/empty/{cart_id} Empty cart
-app.delete('/shoppingcart/empty/([0-9]+)', function (req, res) {
-   res.send('success');
+app.delete('/shoppingcart/empty/:cart_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_empty(?)";
+    var conditionvalues = [
+		req.params.cart_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
-///shoppingcart/empty/{cart_id} Empty cart
-app.get('/shoppingcart/moveToCart/([0-9]+)', function (req, res) {
-   res.send('success');
+///shoppingcart/moveToCart/{item_id} Move a product to cart
+app.get('/shoppingcart/moveToCart/:item_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_move_product_to_cart(?)";
+    var conditionvalues = [
+		req.params.item_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///shoppingcart/totalAmount/{cart_id} Return a total Amount from Cart
-app.get('/shoppingcart/totalAmount/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/shoppingcart/totalAmount/:cart_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_get_total_amount(?)";
+    var conditionvalues = [
+		req.params.cart_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
-///shoppingcart/totalAmount/{cart_id} Return a total Amount from Cart
-app.get('/shoppingcart/saveForLater/([0-9]+)', function (req, res) {
-   res.send('success');
+///shoppingcart/saveForLater/{item_id} Save a Product for latter
+app.get('/shoppingcart/saveForLater/:item_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_save_product_for_later(?)";
+    var conditionvalues = [
+		req.params.item_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///shoppingcart/getSaved/{cart_id} Get Products saved for latter
-app.get('/shoppingcart/getSaved/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/shoppingcart/getSaved/:cart_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_get_saved_products(?)";
+    var conditionvalues = [
+		req.params.cart_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///shoppingcart/removeProduct/{item_id} Remove a product in the cart
-app.delete('/shoppingcart/removeProduct/([0-9]+)', function (req, res) {
-   res.send('success');
+app.delete('/shoppingcart/removeProduct/:item_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "CALL shopping_cart_remove_product(?)";
+    var conditionvalues = [
+		req.params.item_id
+	];
+	
+	executeQuery(query, [conditionvalues], returnObj, res);
 });
 
 /**
- * tax route points
+ * tax api
  */
 ///tax Get All Taxes
 app.get('/tax', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM tax";
+	
+	executeQuery(query, [], returnObj, res);
 });
 ///tax/{tax_id} Get Tax by ID
-app.get('/tax/([0-9]+)', function (req, res) {
-   res.send('success');
+app.get('/tax/:tax_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM tax WHERE tax_id = ?";
+    var conditionvalues = [
+		req.params.tax_id
+	];
+	
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 
 /**
- * shipping route points
+ * shipping api
  */
 ///shipping/regions Return shippings regions
 app.get('/shipping/regions', function (req, res) {
-   res.send('success');
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM shipping_region";
+	
+	executeQuery(query, [], returnObj, res);
 });
-///shipping/regions Return shippings regions
-app.get('/shipping/regions/([0-9]+)', function (req, res) {
-   res.send('success');
+///shipping/regions/{shipping_region_id} Return shippings regions
+app.get('/shipping/regions/:shipping_region_id([0-9]+)', function (req, res) {
+    var returnObj = {
+		code: "DEP_02",
+		message: Errors.DEP_02,
+		field: "department_id"
+	};
+	
+	var query = "SELECT * FROM shipping WHERE shipping_region_id = ?";
+    var conditionvalues = [
+		req.params.shipping_region_id
+	];
+	
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 
 /**
- * stripe route points
+ * stripe api
  */
 ///stripe/charge This method receive a front-end payment and create a chage.
 app.post('/stripe/charge', function (req, res) {
@@ -229,9 +846,9 @@ app.post('/stripe/webhooks', function (req, res) {
    res.send('success');
 });
 
-var server = app.listen(8081, function () {
-   var host = server.address().address
-   var port = server.address().port
+var server = app.listen(8081, "0.0.0.0", function () {
+   var host = server.address().address;
+   var port = server.address().port;
    
-   console.log("Turing API server listening at http://%s:%s", host, port)
+   console.log("Turing API server listening at http://%s:%s", host, port);
 })
