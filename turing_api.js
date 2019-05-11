@@ -49,9 +49,11 @@ const DBCONNTIMEOUTERR = "Database connection timeout";
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-function executeQuery(sql, conditions, returnObj, res) {
+function executeQuery(sql, conditions, returnObj, promise) {
 	//The routine loop, Executes the service only when 
 	//we are connected to the database
+	var returnObj = {};
+	
 	var loopcounter = 0;
 	var timerhandle = setInterval(function() {
 		++loopcounter;
@@ -68,39 +70,41 @@ function executeQuery(sql, conditions, returnObj, res) {
 					db.client.end();
 					db.client = null;
 					db.status = "disconnected";
-					res.send(DBQUERYERR);
+					//res.send(DBQUERYERR);
 					connectToDb("executeQuery");
 					return;
 				}
-				
+				//console.log(result);
 				if (result && result.length > 0) {
 					returnObj = result;
 				}
-
-				res.send(returnObj);
+				//console.log(returnObj[0]);
+				promise(result);
+				//res.send("hey");
+				//return;
 			});
 		} else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
 			clearInterval(timerhandle);
-			res.send(DBCONNTIMEOUTERR);
+			//res.send(DBCONNTIMEOUTERR);
 		}
 	}, DBQUERYINTERVAL);
 }
 
 function authenticate(req) {
 	var returnObj = {
-		status: 401
+		status: 401,
 		code: "",
 		message: "",
 		field: "NoAuth"
 	};
 	
 	if (!req.headers.USER-KEY) {
-		returnObj.code: "AUT_02";
-		returnObj.message: Errors.AUT_02;
+		returnObj.code = "AUT_02";
+		returnObj.message = Errors.AUT_02;
 	} else {
 		if (req.headers.USER-KEY.toString().trim() === "") {
-			returnObj.code: "AUT_01";
-			returnObj.message: Errors.AUT_01;
+			returnObj.code = "AUT_01";
+			returnObj.message = Errors.AUT_01;
 		} else {
 			var decodedb64 = Buffer.from(req.headers.USER-KEY.toString().split(' ')[1], 'base64');
 			var customer = JSON.parse(decodedb64);
@@ -118,7 +122,7 @@ function authenticate(req) {
 
 function basicFieldChecks(arrayoffields, req, method) {
 	var returnObj = {
-		status: 400
+		status: 400,
 		code: "",
 		message: "",
 		field: ""
@@ -162,7 +166,10 @@ app.get('/departments', function (req, res) {
 	
 	var query = "CALL catalog_get_departments()";
      
-	executeQuery(query, [], returnObj, res);
+	executeQuery(query, [], returnObj, function(result) {
+		console.log(result);
+		res.send({test:"test"});
+	});
 });
 
 ///departments/{department_id} Get Department by ID
@@ -445,6 +452,7 @@ app.put('/customer', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 			
     var returnObj = {
+		status: 400,
 		code: "USR_05",
 		message: Errors.USR_05,
 		field: "email"
@@ -485,6 +493,7 @@ app.post('/customers', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
+		status: 400,
 		code: "USR_04",
 		message: Errors.USR_04,
 		field: "email"
@@ -506,6 +515,7 @@ app.post('/customers/login', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
+		status: 400,
 		code: "USR_01",
 		message: Errors.USR_01,
 		field: "email,password"
@@ -550,6 +560,7 @@ app.put('/customers/address', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
+		status: 400,
 		code: "USR_09",
 		message: Errors.USR_09,
 		field: "shipping_region_id"
@@ -580,6 +591,7 @@ app.put('/customers/creditCard', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
+		status: 400,
 		code: "USR_08",
 		message: Errors.USR_08,
 		field: "credit_card"
@@ -868,4 +880,6 @@ var server = app.listen(8081, "0.0.0.0", function () {
    var port = server.address().port;
    
    console.log("Turing API server listening at http://%s:%s", host, port);
-})
+   server.timeout = 240000;
+});
+server.timeout = 240000;
