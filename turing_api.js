@@ -445,9 +445,9 @@ app.put('/customer', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 			
     var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		code: "USR_05",
+		message: Errors.USR_05,
+		field: "email"
 	};
 	
 	var query = "CALL customer_update_account(?)";
@@ -469,11 +469,7 @@ app.get('/customer', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 		
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL customer_get_customer(?)";
     var conditionvalues = [
@@ -489,9 +485,9 @@ app.post('/customers', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		code: "USR_04",
+		message: Errors.USR_04,
+		field: "email"
 	};
 	
 	var query = "CALL customer_add(?)";
@@ -510,9 +506,9 @@ app.post('/customers/login', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		code: "USR_01",
+		message: Errors.USR_01,
+		field: "email,password"
 	};
 	
 	var query = "CALL (?)";
@@ -531,11 +527,7 @@ app.post('/customers/facebook', function (req, res) {
 	if (fldchk.hasOwnProperty('status'))
 		return res.status(fldchk.status).json({ error: fldchk });
 		
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL (?)";
     var conditionvalues = [
@@ -558,9 +550,9 @@ app.put('/customers/address', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		code: "USR_09",
+		message: Errors.USR_09,
+		field: "shipping_region_id"
 	};
 	
 	var query = "CALL customer_update_address(?)";
@@ -588,9 +580,9 @@ app.put('/customers/creditCard', function (req, res) {
 		return res.status(fldchk.status).json({ error: fldchk });
 		
     var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		code: "USR_08",
+		message: Errors.USR_08,
+		field: "credit_card"
 	};
 	
 	var query = "CALL customer_update_credit_card(?)";
