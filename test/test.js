@@ -19,7 +19,7 @@ console.log("\r\n");
  * Uncomment a testcase to execute
  */
 
-testrunner(testcases['departments']);
+//testrunner(testcases['departments']);
 //testrunner(testcases['departments_dept_id']);
 //testrunner(testcases['categories']);
 //testrunner(testcases['categories_category_id']);
@@ -50,5 +50,5 @@ testrunner(testcases['departments']);
 //testrunner(testcases['shoppingcart_remove_item_id']);
 //testrunner(testcases['tax']);
 //testrunner(testcases['tax_tax_id']);
-//testrunner(testcases['shipping_regions']);
+testrunner(testcases['shipping_regions']);
 //testrunner(testcases['shipping_regions_shpng_rgn_id']);

@@ -3,25 +3,25 @@ var http = require('http');
 
 var callRESt = function(message, method, data, success) {
     var dataString = JSON.stringify(data);
-    var headers = {};
     var endpoint = message.endpoint;
 
-    if (method == 'GET') {
-        endpoint += '?' + querystring.stringify(data);
-    } else {
-        headers = {
-            'Keep-Alive': 'timeout=15, max=5',
-            'Content-Type': 'application/json',
-            'Content-Length': dataString.length
-        };
+    var headers = {
+        'Keep-Alive': 'timeout=60, max=5',
+        'Content-Type': 'application/json',
+        'Content-Length': dataString.length
+    };
 
-        if(message.hasOwnProperty('customer_id')
-        && message.customer_id !== "") {
-            var auth = "Bearer " + new Buffer(message.customer_id).toString("base64");
-            headers['USER-KEY'] = auth;
-        }
+    if(message.hasOwnProperty('customer_id')
+        && message.customer_id != "") {
+        let auth = "Bearer " + new Buffer(message.customer_id.toString()).toString("base64");
+        headers['user-key'] = auth;
     }
-
+    
+    if (method == 'GET') {
+        if (data !== null)
+            endpoint += '?' + querystring.stringify(data);
+    }
+    
     var options = {
         host: message.host,
         port: message.port,
@@ -80,7 +80,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/departments/134234",
+                endpoint: "/departments/1",
                 port: 8081
             }
 
@@ -96,10 +96,10 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/categories",
+                endpoint: "/categories?order=name&page=1&limit=5",
                 port: 8081
             }
-
+            
             callRESt(messageparam, "GET", null, 
             function(response) {
                 console.log(response);    
@@ -112,7 +112,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/categories/20",
+                endpoint: "/categories/1",
                 port: 8081
             }
 
@@ -128,7 +128,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/categories/inProduct/3430",
+                endpoint: "/categories/inProduct/50",
                 port: 8081
             }
 
@@ -144,7 +144,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/categories/inDepartment/1234",
+                endpoint: "/categories/inDepartment/2",
                 port: 8081
             }
 
@@ -176,7 +176,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/attributes/45",
+                endpoint: "/attributes/1",
                 port: 8081
             }
 
@@ -192,7 +192,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/attributes/values/3434",
+                endpoint: "/attributes/values/2",
                 port: 8081
             }
 
@@ -208,7 +208,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/attributes/inProduct/4342",
+                endpoint: "/attributes/inProduct/4",
                 port: 8081
             }
 
@@ -224,7 +224,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products",
+                endpoint: "/products?page=1&limit=2&description_length=10",
                 port: 8081
             }
 
@@ -240,7 +240,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/search",
+                endpoint: "/products/search?query_string=Couture&all_words=off&page=1&limit=2&description_length=10",
                 port: 8081
             }
 
@@ -256,7 +256,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/34343",
+                endpoint: "/products/3",
                 port: 8081
             }
 
@@ -272,7 +272,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/inCategory/1",
+                endpoint: "/products/inCategory/1?page=1&limit=2&description_length=10",
                 port: 8081
             }
 
@@ -288,7 +288,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/inDepartment/1",
+                endpoint: "/products/inDepartment/1?page=2&limit=3&description_length=20",
                 port: 8081
             }
 
@@ -304,7 +304,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/1/details",
+                endpoint: "/products/5/details",
                 port: 8081
             }
 
@@ -320,7 +320,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/1/locations",
+                endpoint: "/products/8/locations",
                 port: 8081
             }
 
@@ -336,7 +336,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/1/reviews",
+                endpoint: "/products/9/reviews",
                 port: 8081
             }
 
@@ -352,11 +352,16 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/products/1/reviews",
-                port: 8081
+                endpoint: "/products/9/reviews",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callREST method definition)
             }
-
-            callRESt(messageparam, "POST", null, 
+            var formdata = {
+                review: "this product is awesome",
+                rating: 5
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
             function(response) {
                 console.log(response);    
             });
@@ -387,8 +392,12 @@ var TestCase = {
                 endpoint: "/shoppingcart/add",
                 port: 8081
             }
-
-            callRESt(messageparam, "POST", null, 
+            var formdata = {
+                cart_id: 1,
+                product_id: 1,
+                attributes: "turing great product"
+            }
+            callRESt(messageparam, "POST", formdata, 
             function(response) {
                 console.log(response);    
             });
@@ -404,7 +413,7 @@ var TestCase = {
                 port: 8081
             }
 
-            callRESt(messageparam, "POST", null, 
+            callRESt(messageparam, "GET", null, 
             function(response) {
                 console.log(response);    
             });
@@ -419,8 +428,11 @@ var TestCase = {
                 endpoint: "/shoppingcart/update/1",
                 port: 8081
             }
-
-            callRESt(messageparam, "PUT", null, 
+            var formdata = {
+                quantity: 4
+            }
+            
+            callRESt(messageparam, "PUT", formdata, 
             function(response) {
                 console.log(response);    
             });
@@ -448,7 +460,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/shoppingcart/moveToCart/1",
+                endpoint: "/shoppingcart/moveToCart/2",
                 port: 8081
             }
 
@@ -576,7 +588,7 @@ var TestCase = {
         function () {
             var messageparam = {
                 host: "localhost",
-                endpoint: "/shipping/regions/1",
+                endpoint: "/shipping/regions/3",
                 port: 8081
             }
 

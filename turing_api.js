@@ -35,8 +35,6 @@ var Errors = {
 
 const DBCONNTIMEOUT = 60000; //in terms of milliseconds, routine will stop trying to connect to DB after this lapsed
 const DBQUERYINTERVAL = 1000; // also in terms of milliseconds, how frequent will it check the DB connection status
-
-const DBQUERYERR = "Database query error";
 const DBCONNTIMEOUTERR = "Database connection timeout";
 
 //middleware to filter unauthorized access
@@ -49,22 +47,21 @@ const DBCONNTIMEOUTERR = "Database connection timeout";
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-app.use(function(req, res, next) {
+app.use(function(err, req, res, next) {
     req.socket.on("error", function() {
-
+		console.error(err);
     });
     res.socket.on("error", function() {
-
+		console.error(err);
     });
     next();
 });
 
 
-function executeQuery(sql, conditions, returnObj, promise) {
+function executeQuery(sql, conditions, returnObj, res) {
 	//The routine loop, Executes the service only when 
 	//we are connected to the database
-	var returnObj = {};
-	
+
 	var loopcounter = 0;
 	var timerhandle = setInterval(function() {
 		++loopcounter;
@@ -81,22 +78,20 @@ function executeQuery(sql, conditions, returnObj, promise) {
 					db.client.end();
 					db.client = null;
 					db.status = "disconnected";
-					//res.send(DBQUERYERR);
+					res.send({error: err});
 					connectToDb("executeQuery");
 					return;
 				}
-				//console.log(result);
-				if (result && result.length > 0) {
+
+				if (result 
+					&& result.length > 0) {
 					returnObj = result;
 				}
-				//console.log(returnObj[0]);
-				promise(result);
-				//res.send("hey");
-				//return;
+				res.send(returnObj);
 			});
 		} else if ((loopcounter * DBQUERYINTERVAL) >= DBCONNTIMEOUT) {
 			clearInterval(timerhandle);
-			//res.send(DBCONNTIMEOUTERR);
+			res.send({error: DBCONNTIMEOUTERR});
 		}
 	}, DBQUERYINTERVAL);
 }
@@ -109,17 +104,20 @@ function authenticate(req) {
 		field: "NoAuth"
 	};
 	
-	if (!req.headers.USER-KEY) {
+	if (!req.headers.hasOwnProperty('user-key')) {
 		returnObj.code = "AUT_02";
 		returnObj.message = Errors.AUT_02;
 	} else {
-		if (req.headers.USER-KEY.toString().trim() === "") {
+		if (req.headers['user-key'].toString().trim() === "") {
 			returnObj.code = "AUT_01";
 			returnObj.message = Errors.AUT_01;
 		} else {
-			var decodedb64 = Buffer.from(req.headers.USER-KEY.toString().split(' ')[1], 'base64');
-			var customer = JSON.parse(decodedb64);
-			if (customer.customer_id != "") {
+			var b64key = req.headers['user-key'].toString().split(' ')[1];
+			var decodedb64 = new Buffer(b64key, 'base64').toString('ascii');
+			var customer = { customer_id: parseInt(decodedb64) }
+			
+			if (customer.customer_id != null
+				&& customer.customer_id != "") {
 				returnObj = customer;
 			} else {
 				returnObj.code = "AUT_02";
@@ -177,10 +175,7 @@ app.get('/departments', function (req, res) {
 	
 	var query = "CALL catalog_get_departments()";
      
-	executeQuery(query, [], returnObj, function(result) {
-		console.log(result);
-		res.send({test:"test"});
-	});
+	executeQuery(query, [], returnObj, res);
 });
 
 ///departments/{department_id} Get Department by ID
@@ -209,11 +204,11 @@ app.get('/categories', function (req, res) {
 	
 	var offset = (req.query.page - 1) * req.query.limit;
 	var query = "SELECT category_id, name, description, department_id \
-				 FROM category ORDER BY ? LIMIT ?, ?";
+                 FROM category ORDER BY ? LIMIT ?, ?";
 	var conditionvalues = [
 		req.query.order, 
 		offset, 
-		req.query.limit
+		parseInt(req.query.limit)
 	];
      
 	executeQuery(query, conditionvalues, returnObj, res);
@@ -339,17 +334,17 @@ app.get('/products/search', function (req, res) {
 	var offset = (req.query.page - 1) * req.query.limit;
 	var searchpattern = "";
 	if (req.query.all_words === "on")
-		searchpattern = "name = ?";
+		searchpattern = "name = '" + req.query.query_string + "'";
 	else
-		searchpattern = "name LIKE %?%";
+		searchpattern = "name LIKE '%" + req.query.query_string + "'";
 		
 	var query = "SELECT product_id, name, LEFT(description, ?), price, discounted_price, thumbnail \
-				FROM product WHERE " + searchpattern + " LIMIT ?, ?";
+                 FROM product WHERE " + searchpattern + " LIMIT ?, ?";
+
 	var conditionvalues = [
-		req.query.description_length, 
-		req.query.query_string, 
+		parseInt(req.query.description_length), 
 		offset, 
-		req.query.limit
+		parseInt(req.query.limit)
 	];
 
 	executeQuery(query, conditionvalues, returnObj, res);
