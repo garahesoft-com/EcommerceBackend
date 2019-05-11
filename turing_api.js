@@ -49,6 +49,17 @@ const DBCONNTIMEOUTERR = "Database connection timeout";
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
+app.use(function(req, res, next) {
+    req.socket.on("error", function() {
+
+    });
+    res.socket.on("error", function() {
+
+    });
+    next();
+});
+
+
 function executeQuery(sql, conditions, returnObj, promise) {
 	//The routine loop, Executes the service only when 
 	//we are connected to the database
