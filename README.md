@@ -2,6 +2,8 @@
 
 REST APIs concerning an E-commerce system from Turing.com. 
 
+**Hosted API** I have a live demo API hosted here: http://garahesoft.com:8081
+
 # Requirement 
 
 - Node.js 
