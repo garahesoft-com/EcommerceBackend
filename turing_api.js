@@ -1,3 +1,13 @@
+/*****************************************************
+ * Copyright (c) 2019, Gerald Selvino 
+ * <gnsapp2k18@tutanota.com> All rights reserved.
+ *
+ * This is the set of Turing APIs. It uses Express JS
+ * framework to serve the microservices. Check the
+ * documentation in the docs folder for architecture,
+ * and flow. Also check the testcases.js in the test
+ * folder to see how it is actually used.
+ *****************************************************/
 var express = require('express');
 var app = express();
 var db = require ("./db.js");
@@ -41,6 +51,7 @@ const DBCONNTIMEOUTERR = "Database connection timeout";
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
+//Attach an error listener middleware
 app.use(function(err, req, res, next) {
     req.socket.on("error", function() {
 		console.error(err);
@@ -51,7 +62,9 @@ app.use(function(err, req, res, next) {
     next();
 });
 
-
+/**
+ * Executes all the DB queries of the APIs.
+ */
 function executeQuery(sql, conditions, returnObj, res, querymode = "sp") {
 	//The routine loop, Executes the service only when 
 	//we are connected to the database
@@ -93,6 +106,10 @@ function executeQuery(sql, conditions, returnObj, res, querymode = "sp") {
 	}, DBQUERYINTERVAL);
 }
 
+/**
+ * Check for USER-KEY from the Http headers.
+ * Decodes the key and assign it to customer_id
+ */
 function authenticate(req) {
 	var returnObj = {
 		status: 401,
@@ -126,6 +143,11 @@ function authenticate(req) {
 	return returnObj;
 }
 
+/**
+ * This checks the mandatory fields for value
+ * return an error object if mandatory field
+ * is not present
+ */
 function basicFieldChecks(arrayoffields, req, method) {
 	var returnObj = {
 		status: 400,
@@ -899,6 +921,9 @@ app.post('/stripe/webhooks', function (req, res) {
    	res.send({received: true});
 });
 
+/**
+ * Spawn the API server
+ */
 var server = app.listen(8081, "0.0.0.0", function () {
    var host = server.address().address;
    var port = server.address().port;

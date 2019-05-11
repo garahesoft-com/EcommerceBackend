@@ -1,3 +1,10 @@
+/*****************************************************
+ * Copyright (c) 2019, Gerald Selvino 
+ * <gnsapp2k18@tutanota.com> All rights reserved.
+ *
+ * This is the test runner for the testcases.js
+ *****************************************************/
+ 
 var testcases = require('./testcases.js');
 
 var testrunner = function(testcase) {

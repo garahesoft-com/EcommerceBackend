@@ -1,3 +1,11 @@
+/*****************************************************
+ * Copyright (c) 2019, Gerald Selvino 
+ * <gnsapp2k18@tutanota.com> All rights reserved.
+ *
+ * This is the database setup & connection file. 
+ * Compatible for MySQL and MariaDB.
+ *****************************************************/
+ 
 var mysql = require('mysql');
 var config = require('./dbconfig.js');
 

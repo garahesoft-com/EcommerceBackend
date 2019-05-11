@@ -1,3 +1,14 @@
+/*****************************************************
+ * Copyright (c) 2019, Gerald Selvino 
+ * <gnsapp2k18@tutanota.com> All rights reserved.
+ *
+ * This an Http/Https client capable of calling
+ * REST APIs using Http methods such as
+ * GET, POST, PUT, DELETE. Payloads can be passed
+ * via URL for GET or as a JSON object in the body
+ * for POST & PUT
+ *****************************************************/
+ 
 var querystring = require('querystring');
 var http = require('http');
 var https = require('https');

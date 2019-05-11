@@ -1,3 +1,10 @@
+/*****************************************************
+ * Copyright (c) 2019, Gerald Selvino 
+ * <gnsapp2k18@tutanota.com> All rights reserved.
+ *
+ * This is a collection of test cases for Turing APIs
+ *****************************************************/
+ 
 var callRESt = require('../rest_client.js');
 
 var TestCase = {
