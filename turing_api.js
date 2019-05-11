@@ -87,7 +87,7 @@ function executeQuery(sql, conditions, returnObj, res) {
 }
 
 function authenticate(req) {
-	returnObj = {
+	var returnObj = {
 		status: 401
 		code: "",
 		message: "",
@@ -116,16 +116,49 @@ function authenticate(req) {
 	return returnObj;
 }
 
+function basicFieldChecks(arrayoffields, req, method) {
+	var returnObj = {
+		status: 400
+		code: "",
+		message: "",
+		field: ""
+	};
+	
+	for (var i = 0; i < arrayoffields.length; ++i) {
+		var storagearea = null;
+		switch(method) {
+			case "get":
+				storagearea = req.query;
+			break;
+			case "post":
+			case "put":
+				storagearea = req.body;
+			break;
+			default:
+			console.error("Invalid method");
+			break;
+		}
+		if (!storagearea.hasOwnProperty(arrayoffields[i])
+			|| storagearea[arrayoffields[i]] == "" 
+			|| storagearea[arrayoffields[i]] == null) {
+			
+			returnObj.code = "USR_02";
+			returnObj.message = Errors.USR_02;
+			returnObj.field = arrayoffields[i];
+
+			return returnObj;
+		}
+	}
+
+	return {};
+}
+
 /**
  * departments api
  */
 ///departments Get Departments
 app.get('/departments', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_departments()";
      
@@ -135,6 +168,7 @@ app.get('/departments', function (req, res) {
 ///departments/{department_id} Get Department by ID
 app.get('/departments/:department_id([0-9]+)', function (req, res) {
 	var returnObj = {
+		status: 400,
 		code: "DEP_02",
 		message: Errors.DEP_02,
 		field: "department_id"
@@ -153,12 +187,7 @@ app.get('/departments/:department_id([0-9]+)', function (req, res) {
  */
 ///categories Get Categories
 app.get('/categories', function (req, res) {
-    var returnObj = {};
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var offset = (req.query.page - 1) * req.query.limit;
 	var query = "SELECT category_id, name, description, department_id \
@@ -174,11 +203,12 @@ app.get('/categories', function (req, res) {
 ///categories/{category_id} Get Category by ID
 app.get('/categories/:category_id([0-9]+)', function (req, res) {
 	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		status: 400,
+		code: "CAT_01",
+		message: Errors.CAT_01,
+		field: "category_id"
 	};
-	
+
 	var query = "SELECT * FROM category WHERE category_id = ?";
 	var conditionvalues = [
 		req.params.category_id
@@ -189,9 +219,10 @@ app.get('/categories/:category_id([0-9]+)', function (req, res) {
 ///categories/inProduct/{product_id} Get Categories of a Product
 app.get('/categories/inProduct/:product_id([0-9]+)', function (req, res) {
 	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
+		status: 400,
+		code: "CAT_01",
+		message: Errors.CAT_01,
+		field: "product_id"
 	};
 	
 	var query = "CALL catalog_get_categories_for_product(?)";
@@ -204,11 +235,12 @@ app.get('/categories/inProduct/:product_id([0-9]+)', function (req, res) {
 ///categories/inDepartment/{department_id} Get Categories of a Department
 app.get('/categories/inDepartment/:department_id([0-9]+)', function (req, res) {
 	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
+		status: 400,
+		code: "CAT_01",
+		message: Errors.CAT_01,
 		field: "department_id"
 	};
-	
+
 	var query = "CALL catalog_get_department_categories(?)";
 	var conditionvalues = [
 		req.params.department_id
@@ -222,24 +254,16 @@ app.get('/categories/inDepartment/:department_id([0-9]+)', function (req, res) {
  */
 ///attributes Get Attribute list
 app.get('/attributes', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
-	
+	var returnObj = {};
+
 	var query = "CALL catalog_get_attributes()";
 
 	executeQuery(query, [], returnObj, res);
 });
 ///attributes/{attribute_id} Get Attribute list
 app.get('/attributes/:attribute_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
-	
+	var returnObj = {};
+
 	var query = "CALL catalog_get_attribute_details(?)";
 	var conditionvalues = [
 		req.params.attribute_id
@@ -249,11 +273,7 @@ app.get('/attributes/:attribute_id([0-9]+)', function (req, res) {
 });
 ///attributes/values/{attribute_id} Get Values Attribute from Atribute
 app.get('/attributes/values/:attribute_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_attribute_values(?)";
 	var conditionvalues = [
@@ -264,11 +284,7 @@ app.get('/attributes/values/:attribute_id([0-9]+)', function (req, res) {
 });
 ///attributes/inProduct/{product_id} Get all Attributes with Produt ID
 app.get('/attributes/inProduct/:product_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_product_attributes(?)";
 	var conditionvalues = [
@@ -283,11 +299,7 @@ app.get('/attributes/inProduct/:product_id([0-9]+)', function (req, res) {
  */
 ///products Get All Products
 app.get('/products', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_products_on_catalog(?)";
 	var conditionvalues = [
@@ -300,11 +312,11 @@ app.get('/products', function (req, res) {
 });
 ///products/search Search products
 app.get('/products/search', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var fldchk = basicFieldChecks(["query_string"], req, "get");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+
+	var returnObj = {};
 	
 	var offset = (req.query.page - 1) * req.query.limit;
 	var searchpattern = "";
@@ -326,11 +338,7 @@ app.get('/products/search', function (req, res) {
 });
 ///products/{product_id} Product by ID
 app.get('/products/:product_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_product_info(?)";
 	var conditionvalues = [
@@ -341,11 +349,7 @@ app.get('/products/:product_id([0-9]+)', function (req, res) {
 });
 ///products/inCategory/{category_id} Get a lit of Products of Categories
 app.get('/products/inCategory/:category_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_products_in_category(?)";
 	var conditionvalues = [
@@ -359,11 +363,7 @@ app.get('/products/inCategory/:category_id([0-9]+)', function (req, res) {
 });
 ///products/inDepartment/{department_id} Get a list of Products on Department
 app.get('/products/inDepartment/:department_id([0-9]+)', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_products_on_department(?)";
 	var conditionvalues = [
@@ -377,11 +377,7 @@ app.get('/products/inDepartment/:department_id([0-9]+)', function (req, res) {
 });
 ///products/{product_id}/details Get details of a Product
 app.get('/products/:product_id([0-9]+)/details', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_product_details(?)";
 	var conditionvalues = [
@@ -392,11 +388,7 @@ app.get('/products/:product_id([0-9]+)/details', function (req, res) {
 });
 ///products/{product_id}/locations Get locations of a Product
 app.get('/products/:product_id([0-9]+)/locations', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_product_locations(?)";
 	var conditionvalues = [
@@ -407,11 +399,7 @@ app.get('/products/:product_id([0-9]+)/locations', function (req, res) {
 });
 ///products/{product_id}/reviews Get reviews of a Product
 app.get('/products/:product_id([0-9]+)/reviews', function (req, res) {
-	var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var returnObj = {};
 	
 	var query = "CALL catalog_get_product_reviews(?)";
 	var conditionvalues = [
@@ -426,11 +414,11 @@ app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
   
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+  	var fldchk = basicFieldChecks(["review", "rating"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
+    var returnObj = {};
 	
 	var query = "CALL catalog_create_product_review(?)";
     var conditionvalues = [
@@ -451,7 +439,11 @@ app.put('/customer', function (req, res) {
 	var auth = authenticate(req);
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
-		
+	
+	var fldchk = basicFieldChecks(["name", "email"], req, "put");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+			
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -492,6 +484,10 @@ app.get('/customer', function (req, res) {
 });
 ///customers Register a Customer
 app.post('/customers', function (req, res) {
+	var fldchk = basicFieldChecks(["name", "email", "password"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -509,6 +505,10 @@ app.post('/customers', function (req, res) {
 });
 ///customers/login Sign in in the Shopping.
 app.post('/customers/login', function (req, res) {
+	var fldchk = basicFieldChecks(["email", "password"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -527,6 +527,10 @@ app.post('/customers/login', function (req, res) {
 });
 ///customers/facebook Sign in with a facebook login token.
 app.post('/customers/facebook', function (req, res) {
+	var fldchk = basicFieldChecks(["access_token"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -549,6 +553,10 @@ app.put('/customers/address', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
+	var fldchk = basicFieldChecks(["address_1", "city", "region", "postal_code", "country", "shipping_region_id"], req, "put");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -575,6 +583,10 @@ app.put('/customers/creditCard', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
+	var fldchk = basicFieldChecks(["credit_card"], req, "put");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -599,11 +611,11 @@ app.post('/orders', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var fldchk = basicFieldChecks(["cart_id", "shipping_id", "tax_id"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
+    var returnObj = {};
 	
 	var query = "INSERT INTO order SET customer_id = ?, shipping_id = ?, tax_id = ?";
     var conditionvalues = [
@@ -620,11 +632,7 @@ app.get('/orders/:order_id([0-9]+)', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL orders_get_order_details(?)";
     var conditionvalues = [
@@ -639,11 +647,7 @@ app.get('/orders/inCustomer', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL orders_get_by_customer_id(?)";
     var conditionvalues = [
@@ -658,11 +662,7 @@ app.get('/orders/shortDetail/:order_id([0-9]+)', function (req, res) {
 	if (auth.hasOwnProperty('status'))
 		return res.status(auth.status).json({ error: auth });
 
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL orders_get_order_short_details(?)";
     var conditionvalues = [
@@ -697,11 +697,11 @@ app.get('/shoppingcart/generateUniqueId', function (req, res) {
 });
 ///shoppingcart/add Add a Product in the cart
 app.post('/shoppingcart/add', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var fldchk = basicFieldChecks(["cart_id", "product_id", "attributes"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_add_product(?)";
     var conditionvalues = [
@@ -714,11 +714,7 @@ app.post('/shoppingcart/add', function (req, res) {
 });
 ///shoppingcart/{cart_id} Get List of Products in Shopping Cart
 app.get('/shoppingcart/:cart_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "SELECT sc.item_id, p.name, sc.attributes, sc.product_id, \
 				COALESCE(NULLIF(p.discounted_price, 0), p.price) AS price, sc.quantity, p.image, \
@@ -734,11 +730,11 @@ app.get('/shoppingcart/:cart_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/update/{item_id} Update the cart by item
 app.put('/shoppingcart/update/:item_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+	var fldchk = basicFieldChecks(["quantity"], req, "put");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
+		
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_update(?)";
     var conditionvalues = [
@@ -750,11 +746,7 @@ app.put('/shoppingcart/update/:item_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/empty/{cart_id} Empty cart
 app.delete('/shoppingcart/empty/:cart_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_empty(?)";
     var conditionvalues = [
@@ -765,11 +757,7 @@ app.delete('/shoppingcart/empty/:cart_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/moveToCart/{item_id} Move a product to cart
 app.get('/shoppingcart/moveToCart/:item_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_move_product_to_cart(?)";
     var conditionvalues = [
@@ -780,11 +768,7 @@ app.get('/shoppingcart/moveToCart/:item_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/totalAmount/{cart_id} Return a total Amount from Cart
 app.get('/shoppingcart/totalAmount/:cart_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_get_total_amount(?)";
     var conditionvalues = [
@@ -795,11 +779,7 @@ app.get('/shoppingcart/totalAmount/:cart_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/saveForLater/{item_id} Save a Product for latter
 app.get('/shoppingcart/saveForLater/:item_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_save_product_for_later(?)";
     var conditionvalues = [
@@ -810,11 +790,7 @@ app.get('/shoppingcart/saveForLater/:item_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/getSaved/{cart_id} Get Products saved for latter
 app.get('/shoppingcart/getSaved/:cart_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_get_saved_products(?)";
     var conditionvalues = [
@@ -825,11 +801,7 @@ app.get('/shoppingcart/getSaved/:cart_id([0-9]+)', function (req, res) {
 });
 ///shoppingcart/removeProduct/{item_id} Remove a product in the cart
 app.delete('/shoppingcart/removeProduct/:item_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "CALL shopping_cart_remove_product(?)";
     var conditionvalues = [
@@ -844,11 +816,7 @@ app.delete('/shoppingcart/removeProduct/:item_id([0-9]+)', function (req, res) {
  */
 ///tax Get All Taxes
 app.get('/tax', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "SELECT * FROM tax";
 	
@@ -856,11 +824,7 @@ app.get('/tax', function (req, res) {
 });
 ///tax/{tax_id} Get Tax by ID
 app.get('/tax/:tax_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "SELECT * FROM tax WHERE tax_id = ?";
     var conditionvalues = [
@@ -875,11 +839,7 @@ app.get('/tax/:tax_id([0-9]+)', function (req, res) {
  */
 ///shipping/regions Return shippings regions
 app.get('/shipping/regions', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "SELECT * FROM shipping_region";
 	
@@ -887,11 +847,7 @@ app.get('/shipping/regions', function (req, res) {
 });
 ///shipping/regions/{shipping_region_id} Return shippings regions
 app.get('/shipping/regions/:shipping_region_id([0-9]+)', function (req, res) {
-    var returnObj = {
-		code: "DEP_02",
-		message: Errors.DEP_02,
-		field: "department_id"
-	};
+    var returnObj = {};
 	
 	var query = "SELECT * FROM shipping WHERE shipping_region_id = ?";
     var conditionvalues = [
@@ -906,11 +862,13 @@ app.get('/shipping/regions/:shipping_region_id([0-9]+)', function (req, res) {
  */
 ///stripe/charge This method receive a front-end payment and create a chage.
 app.post('/stripe/charge', function (req, res) {
-   res.send('success');
+   	var fldchk = basicFieldChecks(["stripeToken", "order_id", "description", "amount"], req, "post");
+	if (fldchk.hasOwnProperty('status'))
+		return res.status(fldchk.status).json({ error: fldchk });
 });
 ///stripe/webhooks Endpoint that provide a synchronization
 app.post('/stripe/webhooks', function (req, res) {
-   res.send('success');
+   	
 });
 
 var server = app.listen(8081, "0.0.0.0", function () {
