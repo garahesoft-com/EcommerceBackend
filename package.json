@@ -1,0 +1,23 @@
+{
+  "name": "Turing_Backend_API",
+  "version": "1.0.0",
+  "description": "Mid layer microservices to bridge Turing app from Turing DB. REST APIs",
+  "author": "Gerald Selvino",
+  "main": "turing_api.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geraldselvino/turing_backend_challenge.git"
+  },
+  "scripts": {
+    "start": "node turing_api.js"
+  },
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "querystring": "^0.2.0",
+    "mysql": "^2.17.1",
+    "express": "^4.16.4",
+    "body-parser": "^1.19.0"
+  }
+}
