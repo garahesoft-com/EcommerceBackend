@@ -58,7 +58,7 @@ app.use(function(err, req, res, next) {
 });
 
 
-function executeQuery(sql, conditions, returnObj, res) {
+function executeQuery(sql, conditions, returnObj, res, querymode = "sp") {
 	//The routine loop, Executes the service only when 
 	//we are connected to the database
 
@@ -85,7 +85,10 @@ function executeQuery(sql, conditions, returnObj, res) {
 
 				if (result 
 					&& result.length > 0) {
-					returnObj = result;
+					if (querymode == "sp")
+						returnObj = result[0];
+					else
+						returnObj = result;
 				}
 				res.send(returnObj);
 			});
@@ -192,7 +195,7 @@ app.get('/departments/:department_id([0-9]+)', function (req, res) {
 		req.params.department_id
 	];
      
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 
 /**
@@ -211,7 +214,7 @@ app.get('/categories', function (req, res) {
 		parseInt(req.query.limit)
 	];
      
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 ///categories/{category_id} Get Category by ID
 app.get('/categories/:category_id([0-9]+)', function (req, res) {
@@ -227,7 +230,7 @@ app.get('/categories/:category_id([0-9]+)', function (req, res) {
 		req.params.category_id
 	];
      
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 ///categories/inProduct/{product_id} Get Categories of a Product
 app.get('/categories/inProduct/:product_id([0-9]+)', function (req, res) {
@@ -347,7 +350,7 @@ app.get('/products/search', function (req, res) {
 		parseInt(req.query.limit)
 	];
 
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 ///products/{product_id} Product by ID
 app.get('/products/:product_id([0-9]+)', function (req, res) {
@@ -736,7 +739,7 @@ app.get('/shoppingcart/:cart_id([0-9]+)', function (req, res) {
 		req.params.cart_id
 	];
 	
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 ///shoppingcart/update/{item_id} Update the cart by item
 app.put('/shoppingcart/update/:item_id([0-9]+)', function (req, res) {
@@ -830,7 +833,7 @@ app.get('/tax', function (req, res) {
 	
 	var query = "SELECT * FROM tax";
 	
-	executeQuery(query, [], returnObj, res);
+	executeQuery(query, [], returnObj, res, "inline");
 });
 ///tax/{tax_id} Get Tax by ID
 app.get('/tax/:tax_id([0-9]+)', function (req, res) {
@@ -841,7 +844,7 @@ app.get('/tax/:tax_id([0-9]+)', function (req, res) {
 		req.params.tax_id
 	];
 	
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 
 /**
@@ -853,7 +856,7 @@ app.get('/shipping/regions', function (req, res) {
 	
 	var query = "SELECT * FROM shipping_region";
 	
-	executeQuery(query, [], returnObj, res);
+	executeQuery(query, [], returnObj, res, "inline");
 });
 ///shipping/regions/{shipping_region_id} Return shippings regions
 app.get('/shipping/regions/:shipping_region_id([0-9]+)', function (req, res) {
@@ -864,7 +867,7 @@ app.get('/shipping/regions/:shipping_region_id([0-9]+)', function (req, res) {
 		req.params.shipping_region_id
 	];
 	
-	executeQuery(query, conditionvalues, returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res, "inline");
 });
 
 /**
