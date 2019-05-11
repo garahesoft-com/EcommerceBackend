@@ -86,6 +86,36 @@ function executeQuery(sql, conditions, returnObj, res) {
 	}, DBQUERYINTERVAL);
 }
 
+function authenticate(req) {
+	returnObj = {
+		status: 401
+		code: "",
+		message: "",
+		field: "NoAuth"
+	};
+	
+	if (!req.headers.USER-KEY) {
+		returnObj.code: "AUT_02";
+		returnObj.message: Errors.AUT_02;
+	} else {
+		if (req.headers.USER-KEY.toString().trim() === "") {
+			returnObj.code: "AUT_01";
+			returnObj.message: Errors.AUT_01;
+		} else {
+			var decodedb64 = Buffer.from(req.headers.USER-KEY.toString().split(' ')[1], 'base64');
+			var customer = JSON.parse(decodedb64);
+			if (customer.customer_id != "") {
+				returnObj = customer;
+			} else {
+				returnObj.code = "AUT_02";
+				returnObj.message = Errors.AUT_02;
+			}
+		}
+	}
+	
+	return returnObj;
+}
+
 /**
  * departments api
  */
@@ -392,6 +422,10 @@ app.get('/products/:product_id([0-9]+)/reviews', function (req, res) {
 });
 ///products/{product_id}/reviews
 app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+  
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -400,7 +434,7 @@ app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
 	
 	var query = "CALL catalog_create_product_review(?)";
     var conditionvalues = [
-		req.header.USER-KEY, 
+		auth.customer_id, 
 		req.params.product_id, 
 		req.body.review, 
 		req.body.rating
@@ -414,6 +448,10 @@ app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
  */
 ///customer Update a customer
 app.put('/customer', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -422,7 +460,7 @@ app.put('/customer', function (req, res) {
 	
 	var query = "CALL customer_update_account(?)";
     var conditionvalues = [
-		req.header.USER-KEY, 
+		auth.customer_id, 
 		req.body.name, 
 		req.body.email, 
 		req.body.password,
@@ -435,6 +473,10 @@ app.put('/customer', function (req, res) {
 });
 ///customer Get a customer by ID. The customer is getting by Token.
 app.get('/customer', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+		
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -443,7 +485,7 @@ app.get('/customer', function (req, res) {
 	
 	var query = "CALL customer_get_customer(?)";
     var conditionvalues = [
-		req.header.USER-KEY
+		auth.customer_id
 	];
 	
 	executeQuery(query, [conditionvalues], returnObj, res);
@@ -503,6 +545,10 @@ app.post('/customers/facebook', function (req, res) {
 });
 ///customers/address Update the address from customer
 app.put('/customers/address', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -511,7 +557,7 @@ app.put('/customers/address', function (req, res) {
 	
 	var query = "CALL customer_update_address(?)";
     var conditionvalues = [
-		req.header.USER-KEY, 
+		auth.customer_id, 
 		req.body.address_1, 
 		req.body.address_2, 
 		req.body.city,
@@ -525,6 +571,10 @@ app.put('/customers/address', function (req, res) {
 });
 ///customers/creditCard Update the address from customer
 app.put('/customers/creditCard', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -533,7 +583,7 @@ app.put('/customers/creditCard', function (req, res) {
 	
 	var query = "CALL customer_update_credit_card(?)";
     var conditionvalues = [
-		req.header.USER-KEY, 
+		auth.customer_id, 
 		req.body.credit_card
 	];
 	
@@ -545,22 +595,31 @@ app.put('/customers/creditCard', function (req, res) {
  */
 ///orders Create a Order
 app.post('/orders', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
 		field: "department_id"
 	};
 	
-	var query = "CALL (?)";
+	var query = "INSERT INTO order SET customer_id = ?, shipping_id = ?, tax_id = ?";
     var conditionvalues = [
-		req.header.USER-KEY, 
-		req.body.credit_card
+		auth.customer_id, 
+		req.body.shipping_id,
+		req.body.tax_id
 	];
 	
-	executeQuery(query, [conditionvalues], returnObj, res);
+	executeQuery(query, conditionvalues, returnObj, res);
 });
 ///orders/{order_id} Get Info about Order
 app.get('/orders/:order_id([0-9]+)', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -576,6 +635,10 @@ app.get('/orders/:order_id([0-9]+)', function (req, res) {
 });
 ///orders/inCustomer Get orders by Customer
 app.get('/orders/inCustomer', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
@@ -584,13 +647,17 @@ app.get('/orders/inCustomer', function (req, res) {
 	
 	var query = "CALL orders_get_by_customer_id(?)";
     var conditionvalues = [
-		req.header.USER-KEY
+		auth.customer_id
 	];
 	
 	executeQuery(query, [conditionvalues], returnObj, res);
 });
 ///orders/shortDetail/{order_id} Get Info about Order
 app.get('/orders/shortDetail/:order_id([0-9]+)', function (req, res) {
+	var auth = authenticate(req);
+	if (auth.hasOwnProperty('status'))
+		return res.status(auth.status).json({ error: auth });
+
     var returnObj = {
 		code: "DEP_02",
 		message: Errors.DEP_02,
