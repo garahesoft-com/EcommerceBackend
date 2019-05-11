@@ -3,6 +3,7 @@ var app = express();
 var db = require ("./db.js");
 var querystring = require('querystring');
 var bodyParser = require('body-parser');
+var callRESt = require('./rest_client.js');
 
 function connectToDb(invoker) {
     if (db === undefined 
@@ -37,13 +38,6 @@ const DBCONNTIMEOUT = 60000; //in terms of milliseconds, routine will stop tryin
 const DBQUERYINTERVAL = 1000; // also in terms of milliseconds, how frequent will it check the DB connection status
 const DBCONNTIMEOUTERR = "Database connection timeout";
 
-//middleware to filter unauthorized access
-/*app.use(function(req, res, next) {
-  if (!req.headers.authorization) {
-    return res.status(401).json({ error: 'No credentials sent!' });
-  }
-  next();
-});*/
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
@@ -878,10 +872,31 @@ app.post('/stripe/charge', function (req, res) {
    	var fldchk = basicFieldChecks(["stripeToken", "order_id", "description", "amount"], req, "post");
 	if (fldchk.hasOwnProperty('status'))
 		return res.status(fldchk.status).json({ error: fldchk });
+
+	var messageparam = {
+		host: "api.stripe.com",
+		endpoint: "/v1/charges",
+		port: 8081,
+		user: req.body.stripeToken,
+		pass: "",
+		https: true
+	}
+	var formdata = {
+		metadata: {order_id: req.body.order_id},
+		amount: req.body.amount,
+		currency: req.body.currency,
+		description: req.body.description
+	}
+
+	callRESt(messageparam, "POST", formdata, 
+	function(response) {
+		console.log(response);
+		res.send(response);    
+	});
 });
 ///stripe/webhooks Endpoint that provide a synchronization
 app.post('/stripe/webhooks', function (req, res) {
-   	
+   	res.send({received: true});
 });
 
 var server = app.listen(8081, "0.0.0.0", function () {
@@ -889,6 +904,6 @@ var server = app.listen(8081, "0.0.0.0", function () {
    var port = server.address().port;
    
    console.log("Turing API server listening at http://%s:%s", host, port);
-   server.timeout = 240000;
 });
-server.timeout = 240000;
+
+server.timeout = 120000; // 2 minutes timeout for every API call

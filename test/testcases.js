@@ -1,62 +1,4 @@
-var querystring = require('querystring');
-var http = require('http');
-
-var callRESt = function(message, method, data, success) {
-    var dataString = JSON.stringify(data);
-    var endpoint = message.endpoint;
-
-    var headers = {
-        'Keep-Alive': 'timeout=60, max=5',
-        'Content-Type': 'application/json',
-        'Content-Length': dataString.length
-    };
-
-    if(message.hasOwnProperty('customer_id')
-        && message.customer_id != "") {
-        let auth = "Bearer " + new Buffer(message.customer_id.toString()).toString("base64");
-        headers['user-key'] = auth;
-    }
-    
-    if (method == 'GET') {
-        if (data !== null)
-            endpoint += '?' + querystring.stringify(data);
-    }
-    
-    var options = {
-        host: message.host,
-        port: message.port,
-        path: endpoint,
-        method: method,
-        headers: headers
-    };
-
-    var req = http.request(options, function(res) {
-        res.setEncoding('utf-8');
-
-        var responseString = '';
-
-        res.on('data', function(data) {
-            responseString += data;
-        });
-
-        res.on('end', function() {
-            var responseObject = {};
-            try {
-                responseObject = JSON.parse(responseString);
-            } catch(exception) {
-                console.error(exception.message);
-            } finally {
-                success(responseObject);
-            }
-        });
-    });
-    req.on('error', (err) => {
-        console.error(err.message);
-    });
-
-    req.write(dataString);
-    req.end();
-}
+var callRESt = require('../rest_client.js');
 
 var TestCase = {
     departments: {
@@ -354,7 +296,7 @@ var TestCase = {
                 host: "localhost",
                 endpoint: "/products/9/reviews",
                 port: 8081,
-                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callREST method definition)
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
             }
             var formdata = {
                 review: "this product is awesome",
@@ -591,8 +533,46 @@ var TestCase = {
                 endpoint: "/shipping/regions/3",
                 port: 8081
             }
-
             callRESt(messageparam, "GET", null, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    stripe_charge: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/stripe/charge",
+                port: 8081
+            }
+            var formdata = {
+                stripeToken: "sk_test_lomdOfxbm7QDgZWvR82UhV6D",
+                order_id: 1,
+                description: "Charge to Turing",
+                amount: 100,
+                currency: "usd"
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    stripe_webhooks: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/stripe/webhooks",
+                port: 8081
+            }
+
+            callRESt(messageparam, "POST", null, 
             function(response) {
                 console.log(response);    
             });
