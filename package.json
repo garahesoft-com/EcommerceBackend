@@ -15,9 +15,10 @@
   "requires": true,
   "lockfileVersion": 1,
   "dependencies": {
-    "querystring": "^0.2.0",
-    "mysql": "^2.17.1",
+    "body-parser": "^1.19.0",
     "express": "^4.16.4",
-    "body-parser": "^1.19.0"
+    "mysql": "^2.17.1",
+    "querystring": "^0.2.0",
+    "stripe": "^7.0.0"
   }
 }

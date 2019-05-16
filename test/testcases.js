@@ -317,6 +317,232 @@ var TestCase = {
         },
         enable: true
     },
+    customer_update: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customer",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            var formdata = {
+                name: "Thanos",
+                email: "test@turing.com",
+                password: "12345",
+                day_phone: "+1234567890",
+                eve_phone: "+1234567890",
+                mob_phone: "+1234567890"
+            }
+            
+            callRESt(messageparam, "PUT", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customer",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            callRESt(messageparam, "GET", null, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer_register: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customers",
+                port: 8081
+            }
+            
+            var formdata = {
+                name: "Thanos",
+                email: "test@turing19.com",
+                password: "12345"
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer_login: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customers/login",
+                port: 8081
+            }
+            
+            var formdata = {
+                email: "test@turing.com",
+                password: "12345"
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer_facebook: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customers/facebook",
+                port: 8081
+            }
+            
+            var formdata = {
+                access_token: "abcdefghijklmnop"
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer_update_address: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customers/address",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            var formdata = {
+                address_1: "Los Angeles California",
+                address_2: "USA",
+                city: "LA",
+                region: "California",
+                postal_code: "55645",
+                country: "USA",
+                shipping_region_id: 1
+            }
+            
+            callRESt(messageparam, "PUT", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    customer_update_creditcard: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/customers/creditCard",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            var formdata = {
+                credit_card: "538-672-10234",
+            }
+            
+            callRESt(messageparam, "PUT", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    orders: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/orders",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            var formdata = {
+                cart_id: 1,
+                shipping_id: 1,
+                tax_id: 1
+            }
+            
+            callRESt(messageparam, "POST", formdata, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    orders_order_id: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/orders/1",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            callRESt(messageparam, "GET", null, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    orders_in_customer: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/orders/inCustomer",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            callRESt(messageparam, "GET", null, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
+    orders_shrtdetail_order_id: {
+        run: 
+        function () {
+            var messageparam = {
+                host: "localhost",
+                endpoint: "/orders/shortDetail/1",
+                port: 8081,
+                customer_id: 1 //this will be encoded as the USER-KEY in the Bearer authentication (check callRESt method definition)
+            }
+            
+            callRESt(messageparam, "GET", null, 
+            function(response) {
+                console.log(response);    
+            });
+        },
+        enable: true
+    },
     shoppingcart_generateuid: {
         run: 
         function () {
