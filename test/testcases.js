@@ -412,7 +412,7 @@ var TestCase = {
             }
             
             var formdata = {
-                access_token: "abcdefghijklmnop"
+                access_token: "Bearer MQ=="
             }
             
             callRESt(messageparam, "POST", formdata, 

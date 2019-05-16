@@ -492,7 +492,9 @@ app.post('/products/:product_id([0-9]+)/reviews', function (req, res) {
         req.body.rating
     ];
     
-    executeQuery(query, [conditionvalues], returnObj, res);
+    executeQuery(query, [conditionvalues], returnObj, res, function(returnObj) {
+		res.send({});
+	});
 });
 
 /**
@@ -942,9 +944,9 @@ app.post('/stripe/charge', function (req, res) {
         source: "tok_visa", // obtained with Stripe.js
         metadata: {'order_id': req.body.order_id},
         description: req.body.description
-    }, {
+    }/*, {
         idempotency_key: "fTIArBVOxZzSSkmz"
-    }, function(err, charge) {
+    }*/, function(err, charge) {
         if (err) {
             console.error (err);
             res.send(err);

@@ -101,5 +101,5 @@ console.log("\r\n");
 /**
  * Test for stripe
  */
-testrunner(testcases['stripe_charge']);
+//testrunner(testcases['stripe_charge']);
 //testrunner(testcases['stripe_webhooks']);
