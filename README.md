@@ -12,7 +12,7 @@ Full backend REST API's for general E-commerce applications.
 
 # How to use 
 
-1. Obtain the code using `git clone https://github.com/garahesoft/EcommerceBackend.git` 
+1. Obtain the code using `git clone https://github.com/garahesoft-com/EcommerceBackend.git` 
 2. `cd EcommerceBackend` 
 3. Install dependencies using this command `npm install` 
 4. Run the API server using this command `npm start` 
