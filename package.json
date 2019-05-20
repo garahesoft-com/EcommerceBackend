@@ -1,16 +1,16 @@
 {
-  "name": "Turing_Backend_API",
+  "name": "EcommerceBackend",
   "version": "1.0.0",
-  "description": "Mid layer microservices to bridge Turing app from Turing DB. REST APIs",
-  "author": "Gerald Selvino",
-  "main": "turing_api.js",
+  "description": "Ecommerce mid layer microservices to bridge application from database. REST APIs",
+  "author": "GaraheSoft",
+  "main": "ecommerce_api.js",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/geraldselvino/turing_backend_challenge.git"
+    "url": "git+https://github.com/garahesoft-com/EcommerceBackend.git"
   },
   "scripts": {
-    "start": "node turing_api.js"
+    "start": "node ecommerce_api.js"
   },
   "requires": true,
   "lockfileVersion": 1,

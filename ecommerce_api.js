@@ -1,6 +1,6 @@
 /*****************************************************
- * Copyright (c) 2019, Gerald Selvino 
- * <gnsapp2k18@tutanota.com> All rights reserved.
+ * Copyright (c) 2019, GaraheSoft 
+ * <support@garahesoft.com> All rights reserved.
  *
  * This is the set of Turing APIs. It uses Express JS
  * framework to serve the microservices. Check the
