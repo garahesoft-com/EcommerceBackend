@@ -2,7 +2,7 @@
 
 Full backend REST API's for general E-commerce applications. 
 
-**Hosted API:** There is a live demo API hosted here: http://garahesoft.com:8081
+**Hosted API:** There is a live demo API hosted here: http://garahesoft.com:8081 
 **Postman Doc:** Sample API usage documentation for the hosted API here https://documenter.getpostman.com/view/7556714/S1M2SRka
 
 # Requirement 
